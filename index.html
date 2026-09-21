@@ -1,0 +1,965 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<!-- 검색엔진에 올리지 않는다. 회사 이름과 5층 카페·사장님 같은 말이
+     들어 있어서, 검색으로 흘러드는 것까지 열어둘 이유가 없다.
+     QR 이나 주소를 아는 사람은 그대로 들어온다. -->
+<meta name="robots" content="noindex, nofollow">
+<title>선인의 추석 퀴즈</title>
+<style>
+  :root {
+    /* 추석 밤하늘. 블라인드 테스트니까 "가려진" 쪽이 맞다. */
+    --night:    #16123a;
+    --night-2:  #1f1a4d;
+    --edge:     #332c6e;
+    --ink:      #ece9ff;
+    --muted:    #9b93c9;
+    --moon:     #f7e3a1;
+    --moon-dim: #c9b878;
+
+    /* 선택지 색. A 는 홍, B 는 청 — 편 가르기의 그 색이다. */
+    --c0: #ff4f6a;
+    --c1: #4fa8ff;
+    --c2: #ffb02e;
+    --c3: #3fd18b;
+
+    --wrong: #ff6b84;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--night);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+                 "Noto Sans KR", "Malgun Gothic", "맑은 고딕", system-ui, sans-serif;
+    line-height: 1.6;
+    -webkit-text-size-adjust: 100%;
+    /* 머리 위에서 달빛이 떨어지는 느낌 */
+    background-image:
+      radial-gradient(80% 46% at 50% -6%, rgba(247,227,161,.20), transparent 62%),
+      radial-gradient(60% 40% at 92% 8%, rgba(79,168,255,.10), transparent 70%);
+    background-attachment: fixed;
+  }
+
+  .wrap { max-width: 560px; margin: 0 auto; padding: 0 16px 148px; }
+
+  /* ── 머리말: 방아 찧는 달토끼가 주인공이다 ──────────── */
+  .hero { text-align: center; padding: 36px 0 28px; }
+
+  .moon {
+    width: 124px; height: 124px;
+    margin: 0 auto 18px;
+    display: block;
+    border-radius: 50%;
+    filter: drop-shadow(0 0 40px rgba(247,227,161,.40))
+            drop-shadow(0 0 90px rgba(247,227,161,.16));
+  }
+  .result-top .moon { width: 96px; height: 96px; margin-bottom: 14px; }
+
+  /* 토끼가 절구를 찧는다. 이 페이지에서 움직이는 것은 이것 하나뿐이다. */
+  /* 공이를 곧게 세워 위아래로 내리찍는다. 예전에는 머리 근처를 축으로
+     돌렸는데, 그러면 방망이를 입에 문 것처럼 보였다. 돌리지 않는다.
+     값을 키우면 깊이 박히고, 줄이면 얕게 찍는다. */
+  .pestle {
+    transform-box: view-box;
+    animation: pound 1.5s cubic-bezier(.45,0,.55,1) infinite;
+  }
+  @keyframes pound {
+    0%, 100% { transform: translateY(0); }
+    40%      { transform: translateY(7px); }
+    50%      { transform: translateY(5px); }
+  }
+
+  .title {
+    font-size: 32px; font-weight: 800; letter-spacing: -.035em;
+    margin: 0 0 6px;
+  }
+  .subtitle { margin: 0; color: var(--muted); font-size: 15px; }
+
+  /* ── 라운드 ──────────────────────────────────── */
+  .quiz-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 28px; }
+
+  .round {
+    background: linear-gradient(180deg, var(--night-2), rgba(31,26,77,.55));
+    border: 1px solid var(--edge);
+    border-radius: 20px;
+    padding: 22px 18px 20px;
+  }
+  .round.unanswered {
+    border-color: var(--moon);
+    box-shadow: 0 0 0 3px rgba(247,227,161,.16);
+  }
+
+  /* 라운드 머리: 번호와 맞대결이 한 줄에 선다 */
+  .round-head {
+    display: flex; align-items: baseline; flex-wrap: wrap;
+    gap: 6px 12px;
+    padding-bottom: 13px;
+    border-bottom: 1px solid var(--edge);
+    margin-bottom: 15px;
+  }
+  .round-no {
+    color: var(--moon);
+    font-size: 13px; font-weight: 800;
+    letter-spacing: .16em;
+    white-space: nowrap;
+  }
+  /* 맞대결 이름에는 색을 쓰지 않는다. 답안 버튼이 홍·청이라, 이름까지
+     색을 입히면 "빨간 코카콜라 = 빨간 A" 로 읽혀 답을 흘리게 된다. */
+  .versus {
+    display: flex; align-items: baseline; gap: 8px;
+    flex: 1; min-width: 0;
+  }
+  .versus-name {
+    font-size: 16px; font-weight: 800;
+    letter-spacing: -.02em;
+    word-break: keep-all;
+  }
+  .versus-mark {
+    flex: none;
+    color: var(--muted);
+    font-size: 11px; font-weight: 800; letter-spacing: .08em;
+  }
+
+  /* 훅과 질문은 한 덩어리로 읽힌다 */
+  .ask { margin: 0 0 16px; }
+  .hook { margin: 0 0 3px; color: var(--muted); font-size: 14px; word-break: keep-all; }
+  .question {
+    margin: 0;
+    font-size: 19px; font-weight: 800; letter-spacing: -.02em;
+    word-break: keep-all;
+  }
+
+  /* ── 선택지 ──────────────────────────────────── */
+  /* 두 개짜리는 좌우로. 눈앞의 컵 두 개와 같은 배치여야 헷갈리지 않는다. */
+  .choices { display: grid; gap: 10px; }
+  .choices.duel { grid-template-columns: 1fr 1fr; }
+
+  .choice {
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px;
+    min-height: 68px;
+    padding: 12px 14px;
+    border: 1.5px solid var(--edge);
+    border-radius: 14px;
+    background: rgba(255,255,255,.03);
+    color: var(--ink);
+    font-size: 20px; font-weight: 800; letter-spacing: -.01em;
+    cursor: pointer;
+    text-align: center;
+    word-break: keep-all;
+    -webkit-tap-highlight-color: transparent;
+    transition: background .14s, border-color .14s, transform .08s;
+  }
+  .choices:not(.duel) .choice { justify-content: flex-start; font-size: 17px; }
+  .choice:active { transform: scale(.985); }
+  .choice input { position: absolute; opacity: 0; pointer-events: none; }
+
+  .choice.is-chosen { color: #14102e; border-color: transparent; }
+  .choice.c0.is-chosen { background: var(--c0); }
+  .choice.c1.is-chosen { background: var(--c1); }
+  .choice.c2.is-chosen { background: var(--c2); }
+  .choice.c3.is-chosen { background: var(--c3); }
+  .choice:has(input:focus-visible) { outline: 2px solid var(--moon); outline-offset: 3px; }
+
+  /* ── 제출 ────────────────────────────────────── */
+  .submit-bar {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
+    background: linear-gradient(to top, var(--night) 62%, rgba(22,18,58,0));
+  }
+  .submit {
+    display: block; width: 100%; max-width: 528px; margin: 0 auto;
+    min-height: 58px;
+    border: 0; border-radius: 15px;
+    background: var(--moon); color: #1a1533;
+    font-size: 18px; font-weight: 800; font-family: inherit;
+    letter-spacing: -.01em;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .submit.is-blocked { background: #332d63; color: var(--muted); }
+
+  /* ── 결과 ────────────────────────────────────── */
+  .result-top { text-align: center; padding: 44px 0 10px; }
+  .result-score {
+    font-size: 46px; font-weight: 800; letter-spacing: -.04em;
+    margin: 0 0 8px; color: var(--moon);
+  }
+  .result-remark {
+    margin: 0 0 10px; color: var(--ink); font-size: 19px; font-weight: 700;
+    word-break: keep-all;
+  }
+  /* 다시 가보라고 꾀는 줄. 어느 라운드를 틀렸는지는 일부러 안 알려주므로,
+     결과 화면에 남는 말은 점수와 이 두 줄이 전부다. */
+  .result-nudge {
+    margin: 0 auto 34px; max-width: 22em;
+    color: var(--muted); font-size: 15px; line-height: 1.6;
+    word-break: keep-all;
+  }
+
+  .back {
+    display: block; width: 100%; min-height: 56px;
+    border: 1.5px solid var(--edge); border-radius: 15px;
+    background: transparent; color: var(--ink);
+    font-size: 16px; font-weight: 700; font-family: inherit;
+    cursor: pointer;
+  }
+
+  /* ── 설정 오류 ───────────────────────────────── */
+  .config-error {
+    margin: 20px 0 0;
+    padding: 15px 16px;
+    background: rgba(255,79,106,.10);
+    border: 1.5px solid var(--wrong);
+    border-radius: 13px;
+    color: #ffc6d0;
+    font-size: 14px;
+    white-space: pre-wrap;
+    line-height: 1.55;
+  }
+
+  /* 만점일 때 터지는 것 */
+  #confetti {
+    position: fixed; inset: 0;
+    pointer-events: none;
+    z-index: 5;
+  }
+  .result-score.is-perfect {
+    font-size: 40px;
+    animation: pop .5s cubic-bezier(.2,1.6,.4,1) both;
+  }
+  @keyframes pop {
+    from { transform: scale(.7); opacity: 0; }
+    to   { transform: scale(1);  opacity: 1; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- 보름달에서 방아 찧는 토끼. 퀴즈 화면과 결과 화면이 같이 쓴다. -->
+<template id="moon-tpl">
+  <svg class="moon" viewBox="0 0 100 100" aria-hidden="true">
+    <defs>
+      <radialGradient id="moonface" cx="36%" cy="30%" r="78%">
+        <stop offset="0%"  stop-color="#fffaea"/>
+        <stop offset="58%" stop-color="#f7e3a1"/>
+        <stop offset="100%" stop-color="#c9b878"/>
+      </radialGradient>
+    </defs>
+    <circle cx="50" cy="50" r="47" fill="url(#moonface)"/>
+    <!-- 달 얼룩 -->
+    <g fill="rgba(150,125,80,.16)">
+      <circle cx="22" cy="30" r="7"/>
+      <circle cx="78" cy="24" r="4.5"/>
+      <circle cx="17" cy="58" r="3.5"/>
+    </g>
+    <!-- 토끼 -->
+    <g fill="rgba(132,106,62,.62)">
+      <ellipse cx="66" cy="66" rx="11.5" ry="13.5"/>  <!-- 몸 -->
+      <circle cx="62" cy="46" r="8.4"/>               <!-- 머리 -->
+      <ellipse cx="57" cy="31" rx="3.1" ry="11" transform="rotate(-14 57 31)"/>
+      <ellipse cx="66" cy="30" rx="3.1" ry="11" transform="rotate(7 66 30)"/>
+      <circle cx="77" cy="70" r="4"/>                 <!-- 꼬리 -->
+    </g>
+    <!-- 공이와 그것을 쥔 앞발. 둘이 함께 위아래로 움직인다.
+         앞발이 몸에서 떨어져 보이지 않도록, 어깨 쪽 끝은 움직여도
+         몸 타원 안에 머무는 높이에 둔다. -->
+    <g class="pestle">
+      <rect x="33.5" y="36" width="5" height="35" rx="2.5" fill="rgba(132,106,62,.78)"/>
+      <path d="M57 62 L40 57" fill="none" stroke="rgba(132,106,62,.62)"
+            stroke-width="6.5" stroke-linecap="round"/>
+      <circle cx="36" cy="56" r="4.6" fill="rgba(132,106,62,.72)"/>  <!-- 앞발 -->
+    </g>
+    <!-- 절구는 공이보다 나중에 그린다. 그래야 공이가 절구 뒤로,
+         즉 절구 "안으로" 들어가는 것처럼 보인다. -->
+    <path d="M24 74h22l-3.2 10H27.2z" fill="rgba(132,106,62,.62)"/>
+  </svg>
+</template>
+
+<canvas id="confetti" hidden></canvas>
+
+<div class="wrap">
+  <div id="config-error" class="config-error" hidden></div>
+
+  <!-- 화면 1 : 퀴즈 -->
+  <section id="screen-quiz">
+    <header class="hero">
+      <div id="hero-moon"></div>
+      <h1 id="title" class="title"></h1>
+      <p id="subtitle" class="subtitle"></p>
+    </header>
+    <ol id="quiz-list" class="quiz-list"></ol>
+  </section>
+
+  <!-- 화면 2 : 결과 -->
+  <section id="screen-result" hidden>
+    <div class="result-top">
+      <div id="result-moon"></div>
+      <p id="result-score" class="result-score"></p>
+      <p id="result-remark" class="result-remark"></p>
+      <p id="result-nudge" class="result-nudge"></p>
+    </div>
+    <button id="back" class="back" type="button"></button>
+  </section>
+</div>
+
+<div id="submit-bar" class="submit-bar">
+  <button id="submit" class="submit" type="button"></button>
+</div>
+
+<script>
+"use strict";
+
+// ══════════════════════════════════════════════════════════════
+//  문제 — 여기를 고치세요
+//
+//  hook      라운드 위에 뜨는, 약 올리는 한 줄
+//  versus    맞대결 두 이름. 대결이 아니면 null
+//  question  실제로 묻는 것
+//  choices   선택지. 컵에 붙인 글자와 똑같이 적으세요
+//  answer    정답이 choices 의 몇 번째인지. 0 부터 셉니다.
+//            첫 번째가 정답이면 0, 두 번째면 1, 세 번째면 2...
+//
+//            ⚠ 아직 안 정했으면 null 로 두세요. 화면이 빨갛게
+//              경고해서, 정답을 안 채운 채 행사가 시작되는 것을
+//              막아줍니다.
+//
+//  고친 뒤  node --test  를 돌리면 실수를 잡아줍니다.
+// ══════════════════════════════════════════════════════════════
+const QUIZ = [
+  {
+    hook: "감자칩 좀 먹어봤다면 알겠지?",
+    versus: ["오리온 포카칩", "농심 포테토칩"],
+    question: "원조 농심 포테토칩은 무엇일까!",
+    choices: ["A", "B"],
+    answer: 1, // B
+  },
+  {
+    hook: "로고 없으면 자신 없어?",
+    versus: ["코카콜라", "펩시콜라"],
+    question: "진짜 코카콜라를 찾아라!",
+    choices: ["A", "B"],
+    answer: 0, // A
+  },
+  {
+    hook: "초코파이는 다 똑같다고?",
+    versus: ["오리온 초코파이", "롯데 초코파이"],
+    question: "진짜 오리온 초코파이를 맞혀라!",
+    choices: ["A", "B"],
+    answer: 0, // A
+  },
+  {
+    hook: "매일 마셨는데 설마 모르겠어?",
+    versus: ["5층 카페 커피", "네스프레소"],
+    question: "5층 카페 커피는 어느 쪽?",
+    choices: ["A", "B"],
+    answer: 1, // B
+  },
+  {
+    hook: "사장님의 시간을 거슬러 올라갑니다.",
+    versus: null, // 맞대결이 아니라 순서 맞히기
+    question: "과거부터 현재까지 순서대로 맞혀라!",
+    // 이 라운드만 보기가 A·B 가 아니라 ①~④ 다.
+    // 사진에 붙인 기호(A~F)를 순서대로 나열한 것이다.
+    choices: [
+      "① A → D → F → C → B → E",
+      "② A → F → C → D → E → B",
+      "③ A → F → D → C → B → E",
+      "④ A → D → F → B → C → E",
+    ],
+    answer: 2, // ③
+  },
+];
+
+// ══════════════════════════════════════════════════════════════
+//  화면 문구 — 여기를 고치세요
+//
+//  {n} {score} {total} 은 숫자로 바뀝니다. 지우면 숫자가 안 나옵니다.
+// ══════════════════════════════════════════════════════════════
+const CONTENT = {
+  title: "선인의 추석 퀴즈",
+  subtitle: "부스를 돌며 다섯 라운드에 도전하세요",
+
+  roundLabel: "ROUND {n}",
+  versusMark: "VS",
+
+  submit: "제출하기",
+  remaining: "{n}라운드 남았어요",
+
+  resultScore: "{total}개 중 {score}개",
+  resultPerfect: "{total}개 전부 정답!!!",
+  back: "돌아가서 다시 풀기",
+
+  // ── 점수별 문구 ──────────────────────────────────
+  //
+  //  0점부터 만점까지 한 짝씩. 라운드 수 + 1 개여야 합니다.
+  //
+  //  line   점수 밑에 큰 글씨로 나오는 줄
+  //  nudge  그 밑에 작게 나오는, 다시 가보라고 꾀는 줄
+  //
+  //  ⚠ 어느 라운드를 틀렸는지는 일부러 안 알려줍니다. 그러니
+  //    "반대로 골라보세요" 같은 말도 쓰면 안 됩니다 — 대부분
+  //    2지선다라, 그 한마디면 다음 시도에 그냥 만점이 됩니다.
+  remarks: [
+    { line: "다섯 개 전부 빗나갔어요 🙈", nudge: "괜찮아요, 여기서 올라갈 일만 남았습니다" },
+    { line: "하나 건졌습니다 🌱",        nudge: "부스를 한 번 더 돌면 보이는 게 달라져요" },
+    { line: "절반까지 한 걸음 🌗",        nudge: "혀를 믿을지 눈을 믿을지, 다시 생각해보세요" },
+    { line: "과반 성공! 🔥",            nudge: "두 개가 아직 숨어 있어요. 어느 부스였을까요?" },
+    { line: "아쉬워요, 딱 하나만 더! 😤",  nudge: "한 부스가 발목을 잡았습니다. 어디였을까요?" },
+    { line: "하나도 안 틀리셨습니다 🏆",   nudge: "🎁 이 화면을 직원에게 보여주세요" },
+  ],
+};
+
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = { QUIZ: QUIZ, CONTENT: CONTENT };
+}
+
+</script>
+<script>
+"use strict";
+
+// 답안을 채점한다. answers[i] 는 고른 선택지 인덱스, 안 골랐으면 null.
+//
+// 정답(q.answer)도 아직 안 정해서 null 일 수 있다. 그때 안 고른 사람까지
+// null === null 로 정답 처리되면, 아무도 안 푼 문제를 전원이 맞힌 것으로
+// 나온다. 그래서 고른 것이 있을 때만 맞다고 본다.
+function grade(answers, quiz) {
+  const marks = quiz.map(
+    (q, i) => Number.isInteger(q.answer) && answers[i] === q.answer
+  );
+  return { score: marks.filter(Boolean).length, marks: marks };
+}
+
+// "{score}개" 의 {키} 를 값으로 바꾼다. 값이 없는 자리표시자는 그대로 둔다.
+function fill(template, values) {
+  return String(template).replace(/\{(\w+)\}/g, (whole, key) =>
+    Object.prototype.hasOwnProperty.call(values, key) ? String(values[key]) : whole
+  );
+}
+
+// 문제와 문구에 사고가 될 실수가 있는지 본다. 빈 배열이면 정상.
+function validateContent(quiz, content) {
+  const problems = [];
+
+  if (!Array.isArray(quiz) || quiz.length === 0) {
+    problems.push("QUIZ 가 비어 있습니다.");
+    return problems;
+  }
+
+  // 정답 미정은 여러 라운드에서 한꺼번에 나오기 쉽다. 같은 설명을 라운드마다
+  // 되풀이하면 경고창이 화면을 덮어버려서, 정작 다른 문제가 묻힌다.
+  const undecided = [];
+
+  quiz.forEach((q, i) => {
+    const no = "ROUND " + (i + 1);
+    if (!Array.isArray(q.choices) || q.choices.length < 2) {
+      problems.push(no + ": 선택지가 2개보다 적습니다.");
+      return; // 선택지가 없으면 answer 검사는 의미가 없다
+    }
+    if (q.answer === null) {
+      // 아직 안 정한 것. 사고는 아니지만 이대로 행사가 시작되면
+      // 아무도 못 맞히는 라운드가 된다. 눈에 띄게 남겨둔다.
+      undecided.push(i + 1);
+    } else if (!Number.isInteger(q.answer) || q.answer < 0 || q.answer >= q.choices.length) {
+      problems.push(
+        no + ": answer 가 " + q.answer + " 인데 선택지는 " + q.choices.length + "개입니다. " +
+        "(0 부터 셉니다 — 첫 번째가 정답이면 0)"
+      );
+    }
+    if (!q.question) {
+      problems.push(no + ": question 이 비어 있습니다.");
+    }
+    // versus 는 없어도 되지만(순서 맞히기처럼), 있다면 두 개여야 화면이 그려진다.
+    if (q.versus != null && (!Array.isArray(q.versus) || q.versus.length !== 2)) {
+      problems.push(no + ": versus 는 이름 두 개짜리 배열이거나 null 이어야 합니다.");
+    }
+  });
+
+  if (undecided.length > 0) {
+    problems.push(
+      "정답을 아직 안 정했습니다 — ROUND " + undecided.join(", ") + ". " +
+      "content.js 에서 answer 를 채우세요. (0 부터 셉니다 — 첫 번째가 정답이면 0)"
+    );
+  }
+
+  if (!content) {
+    problems.push("CONTENT 가 통째로 없습니다.");
+    return problems;
+  }
+
+  // 화면에 그대로 찍히는 문구들. 하나라도 지우면 버튼에 undefined 가 뜬다.
+  ["title", "subtitle", "roundLabel", "versusMark",
+   "submit", "remaining", "resultScore", "resultPerfect", "back"].forEach((key) => {
+    if (!content[key]) {
+      problems.push("CONTENT." + key + " 가 비어 있습니다. (화면에 그대로 나오는 문구입니다)");
+    }
+  });
+
+  // 자리표시자를 지우면 숫자가 안 들어가고 {n} 이 글자 그대로 화면에 보인다.
+  if (content.remaining && !/\{n\}/.test(content.remaining)) {
+    problems.push(
+      "CONTENT.remaining 에 {n} 이 없습니다. 남은 문제 수가 들어갈 자리라 지우면 안 됩니다."
+    );
+  }
+  if (content.roundLabel && !/\{n\}/.test(content.roundLabel)) {
+    problems.push(
+      "CONTENT.roundLabel 에 {n} 이 없습니다. 라운드 번호가 들어갈 자리라 지우면 안 됩니다."
+    );
+  }
+  if (content.resultScore && !/\{score\}/.test(content.resultScore)) {
+    problems.push(
+      "CONTENT.resultScore 에 {score} 가 없습니다. 맞힌 개수가 들어갈 자리라 지우면 안 됩니다."
+    );
+  }
+  if (content.resultScore && !/\{total\}/.test(content.resultScore)) {
+    problems.push(
+      "CONTENT.resultScore 에 {total} 이 없습니다. 전체 문제 수가 들어갈 자리라 지우면 안 됩니다."
+    );
+  }
+
+  if (!Array.isArray(content.remarks)) {
+    problems.push("CONTENT.remarks 가 배열이 아닙니다.");
+  } else if (content.remarks.length !== quiz.length + 1) {
+    problems.push(
+      "CONTENT.remarks 는 " + (quiz.length + 1) + "개여야 하는데 " +
+      content.remarks.length + "개입니다. (0점부터 만점까지 한 짝씩)"
+    );
+  } else {
+    // 결과 화면은 점수와 이 문구가 전부다. 예전처럼 문자열만 적어두면
+    // 화면의 그 자리가 조용히 비어버려서, 그 점수를 받은 사람만 빈 화면을 본다.
+    content.remarks.forEach((r, i) => {
+      if (!r || typeof r !== "object" || Array.isArray(r)) {
+        problems.push(
+          "CONTENT.remarks[" + i + "] 가 { line, nudge } 짝이 아닙니다. " +
+          "(" + i + "점일 때 나오는 문구입니다)"
+        );
+      } else if (!r.line) {
+        problems.push(
+          "CONTENT.remarks[" + i + "].line 이 비어 있습니다. " +
+          "(" + i + "점일 때 큰 글씨로 나오는 줄입니다)"
+        );
+      }
+      // nudge 는 없어도 된다. 둘째 줄이 안 나올 뿐 화면은 멀쩡하다.
+    });
+  }
+
+  return problems;
+}
+
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = { grade: grade, validateContent: validateContent, fill: fill };
+}
+
+</script>
+<script>
+"use strict";
+
+(function () {
+  // ── 스크립트가 아예 안 올라왔을 때 ─────────────────────
+  // content.js 에 쉼표 하나만 빠져도 그 파일 전체가 문법 오류가 되어 QUIZ 가
+  // 아예 만들어지지 않는다. 그대로 진행하면 첫 줄에서 터져 제목도 경고도 없는
+  // 새하얀 화면만 남는다 — 행사 5분 전에 고칠 단서가 하나도 없는 상태다.
+  // typeof 로 봐야 없는 이름을 건드려도 이 검사 자체가 또 터지지 않는다.
+  var missing = [];
+  if (typeof QUIZ === "undefined" || typeof CONTENT === "undefined") missing.push("content.js");
+  if (typeof grade === "undefined" ||
+      typeof validateContent === "undefined" ||
+      typeof fill === "undefined") missing.push("quiz-core.js");
+
+  if (missing.length > 0) {
+    showFatal(
+      "⚠ " + missing.join(" 과 ") + " 파일을 읽지 못했습니다\n\n" +
+      "십중팔구 " + missing[0] + " 안에서 쉼표(,) 가 빠졌거나\n" +
+      "괄호 { } [ ] 를 닫지 않은 것입니다.\n" +
+      "방금 고친 줄의 앞뒤를 먼저 보세요.\n\n" +
+      "고친 뒤 이 페이지를 새로고침하면 됩니다. 서버는 다시 띄우지 않아도 됩니다."
+    );
+    return;
+  }
+
+  // 여기서부터는 데이터가 있다. 그래도 예상 못 한 오류로 또 흰 화면이 되는 것보다,
+  // 경고라도 남겨서 무엇을 되돌려야 하는지 보이게 한다.
+  try {
+    run();
+  } catch (e) {
+    showFatal(
+      "⚠ 화면을 그리다 멈췄습니다\n\n" +
+      "content.js 를 방금 고쳤다면 그 부분을 되돌려 보세요.\n\n" +
+      String(e && e.message ? e.message : e)
+    );
+  }
+
+  function showFatal(message) {
+    var box = document.getElementById("config-error");
+    box.hidden = false;
+    box.textContent = message;
+    // 글씨 없는 제출 버튼이 밑에 붙어 있으면 고장난 화면처럼 보이니 치운다.
+    var bar = document.getElementById("submit-bar");
+    if (bar) bar.hidden = true;
+  }
+
+  // 만점일 때만 터진다. 라이브러리 없이 캔버스에 직접 그린다.
+  function celebrate() {
+    if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    var cv = document.getElementById("confetti");
+    var ctx = cv.getContext && cv.getContext("2d");
+    if (!ctx) return;
+
+    cv.hidden = false;
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var w = cv.width = innerWidth * dpr;
+    var h = cv.height = innerHeight * dpr;
+    cv.style.width = innerWidth + "px";
+    cv.style.height = innerHeight + "px";
+
+    var colors = ["#f7e3a1", "#ff4f6a", "#4fa8ff", "#ffb02e", "#3fd18b", "#ffffff"];
+    var bits = [];
+    for (var i = 0; i < 130; i++) {
+      bits.push({
+        x: w * (0.2 + Math.random() * 0.6),
+        y: h * 0.32 + (Math.random() - 0.5) * 40 * dpr,
+        vx: (Math.random() - 0.5) * 13 * dpr,
+        vy: (Math.random() * -13 - 4) * dpr,
+        size: (4 + Math.random() * 5) * dpr,
+        spin: (Math.random() - 0.5) * 0.3,
+        angle: Math.random() * Math.PI,
+        color: colors[(Math.random() * colors.length) | 0],
+      });
+    }
+
+    var start = Date.now();
+    (function frame() {
+      var elapsed = Date.now() - start;
+      ctx.clearRect(0, 0, w, h);
+
+      for (var i = 0; i < bits.length; i++) {
+        var b = bits[i];
+        b.vy += 0.34 * dpr;   // 중력
+        b.vx *= 0.995;
+        b.x += b.vx;
+        b.y += b.vy;
+        b.angle += b.spin;
+
+        ctx.save();
+        ctx.translate(b.x, b.y);
+        ctx.rotate(b.angle);
+        ctx.globalAlpha = Math.max(0, 1 - elapsed / 2600);
+        ctx.fillStyle = b.color;
+        ctx.fillRect(-b.size / 2, -b.size / 2, b.size, b.size * 0.62);
+        ctx.restore();
+      }
+
+      if (elapsed < 2600) requestAnimationFrame(frame);
+      else { ctx.clearRect(0, 0, w, h); cv.hidden = true; }
+    })();
+  }
+
+  function run() {
+    var STORAGE_KEY = "chuseok-quiz-v1";
+    var currentScreen = "quiz";
+
+    // 달토끼를 두 화면에 심는다.
+    //
+    // 달 표면 그라데이션까지 그대로 복제하면 id 가 둘이 된다. 그러면 결과
+    // 화면의 달도 퀴즈 화면 쪽 그라데이션을 가리키는데, 결과를 볼 때
+    // 퀴즈 화면은 hidden 이라 그 그라데이션이 죽는다 — 달이 통째로
+    // 투명해지고 토끼만 남는다. 그래서 화면마다 id 를 따로 준다.
+    ["hero-moon", "result-moon"].forEach(function (id) {
+      var slot = document.getElementById(id);
+      var tpl = document.getElementById("moon-tpl");
+      if (!slot || !tpl) return;
+
+      var moon = tpl.content.cloneNode(true);
+      var faceId = "moonface-" + id;
+      moon.querySelector("radialGradient").id = faceId;
+      moon.querySelector("circle[fill^='url(']").setAttribute("fill", "url(#" + faceId + ")");
+      slot.appendChild(moon);
+    });
+
+    // 저장된 것을 읽되, 지금 문제와 안 맞으면 버린다.
+    // 나중에 문제를 고치면 예전 답이 엉뚱한 선택지를 가리키기 때문이다.
+    function loadSaved() {
+      var blank = { answers: QUIZ.map(function () { return null; }), screen: "quiz" };
+      try {
+        var raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return blank;
+
+        var saved = JSON.parse(raw);
+        if (!saved || !Array.isArray(saved.answers)) return blank;
+        if (saved.answers.length !== QUIZ.length) return blank;
+
+        return {
+          answers: saved.answers.map(function (v, i) {
+            var valid = Number.isInteger(v) && v >= 0 && v < QUIZ[i].choices.length;
+            return valid ? v : null;
+          }),
+          screen: saved.screen === "result" ? "result" : "quiz",
+        };
+      } catch (e) {
+        return blank;  // 사생활 보호 모드 등으로 못 읽어도 그냥 빈 시험지로 시작한다
+      }
+    }
+
+    function save() {
+      try {
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({ answers: answers, screen: currentScreen })
+        );
+      } catch (e) {}
+    }
+
+    var saved = loadSaved();
+    var answers = saved.answers;
+
+    // ── 문제 데이터에 사고가 있으면 먼저 알린다 ──────────────
+    var problems = validateContent(QUIZ, CONTENT);
+    if (problems.length > 0) {
+      var box = document.getElementById("config-error");
+      box.hidden = false;
+      box.textContent = "⚠ 문제 데이터에 오류가 있습니다\n\n" + problems.join("\n");
+    }
+
+    // ── 퀴즈 화면 ─────────────────────────────────────────
+    document.getElementById("title").textContent = CONTENT.title;
+    document.title = CONTENT.title;
+    document.getElementById("subtitle").textContent = CONTENT.subtitle;
+    document.getElementById("back").textContent = CONTENT.back;
+
+    function renderQuiz() {
+      var list = document.getElementById("quiz-list");
+      list.textContent = "";
+
+      QUIZ.forEach(function (q, i) {
+        var card = document.createElement("li");
+        card.className = "round";
+        card.id = "card-" + i;
+
+        // 머리줄 — ROUND n 과 맞대결이 나란히 선다
+        var head = document.createElement("div");
+        head.className = "round-head";
+        var no = document.createElement("span");
+        no.className = "round-no";
+        no.textContent = fill(CONTENT.roundLabel, { n: i + 1 });
+        head.appendChild(no);
+
+        if (q.versus) {
+          var vs = document.createElement("span");
+          vs.className = "versus";
+          var left = document.createElement("span");
+          left.className = "versus-name";
+          left.textContent = q.versus[0];
+          var mark = document.createElement("span");
+          mark.className = "versus-mark";
+          mark.textContent = CONTENT.versusMark;
+          var right = document.createElement("span");
+          right.className = "versus-name";
+          right.textContent = q.versus[1];
+          vs.appendChild(left);
+          vs.appendChild(mark);
+          vs.appendChild(right);
+          head.appendChild(vs);
+        }
+        card.appendChild(head);
+
+        // 훅과 질문은 한 덩어리
+        var ask = document.createElement("div");
+        ask.className = "ask";
+        if (q.hook) {
+          var hook = document.createElement("p");
+          hook.className = "hook";
+          hook.textContent = q.hook;
+          ask.appendChild(hook);
+        }
+        var question = document.createElement("h2");
+        question.className = "question";
+        question.textContent = q.question;
+        ask.appendChild(question);
+        card.appendChild(ask);
+
+        var choices = document.createElement("div");
+        // 두 개짜리는 좌우로 — 눈앞의 컵 배치와 같게
+        choices.className = "choices" + (q.choices.length === 2 ? " duel" : "");
+
+        q.choices.forEach(function (choice, c) {
+          var label = document.createElement("label");
+          label.className = "choice c" + (c % 4);
+
+          var input = document.createElement("input");
+          input.type = "radio";
+          input.name = "q" + i;
+          input.value = String(c);
+          input.checked = answers[i] === c;
+          if (input.checked) label.classList.add("is-chosen");
+
+          // 이 라운드의 선택 표시를 전부 지운다.
+          // 선택 표시를 CSS 선택자에 맡기지 않는다 — `:has()` 를 모르는 폰에서
+          // 탭해도 아무 반응이 없으면 고장난 버튼과 구별되지 않는다.
+          function clearRound() {
+            var all = choices.querySelectorAll(".choice");
+            for (var k = 0; k < all.length; k++) {
+              all[k].classList.remove("is-chosen");
+              all[k].querySelector("input").checked = false;
+            }
+          }
+
+          function choose() {
+            clearRound();
+            answers[i] = c;
+            input.checked = true;
+            label.classList.add("is-chosen");
+            card.classList.remove("unanswered");
+            onAnswerChanged();
+          }
+
+          // 고른 것을 한 번 더 누르면 풀린다. 라디오 버튼은 원래 한 번 고르면
+          // 못 푸는데, 맛을 보다 마음이 바뀌면 지울 수 있어야 한다.
+          label.addEventListener("click", function (e) {
+            e.preventDefault(); // 네이티브 동작을 막고 우리가 정한다
+            if (answers[i] === c) {
+              clearRound();
+              answers[i] = null;
+              onAnswerChanged();
+            } else {
+              choose();
+            }
+            input.focus({ preventScroll: true });
+          });
+
+          // 키보드 화살표로 옮기면 click 이 아니라 change 가 온다
+          input.addEventListener("change", choose);
+
+          var text = document.createElement("span");
+          text.textContent = choice;
+
+          label.appendChild(input);
+          label.appendChild(text);
+          choices.appendChild(label);
+        });
+
+        card.appendChild(choices);
+        list.appendChild(card);
+      });
+
+      updateSubmit();
+    }
+
+    function onAnswerChanged() {
+      save();
+      updateSubmit();
+    }
+
+    function remainingCount() {
+      return answers.filter(function (a) { return a === null; }).length;
+    }
+
+    function updateSubmit() {
+      var btn = document.getElementById("submit");
+      var n = remainingCount();
+      var blocked = n > 0;
+      btn.classList.toggle("is-blocked", blocked);
+      btn.setAttribute("aria-disabled", String(blocked));
+      btn.textContent = blocked ? fill(CONTENT.remaining, { n: n }) : CONTENT.submit;
+    }
+
+    document.getElementById("submit").addEventListener("click", function () {
+      var first = answers.indexOf(null);
+
+      // 덜 풀었으면 막되, 어디가 비었는지 보여준다.
+      // 그냥 회색으로 죽여두면 왜 안 눌리는지 모른다.
+      if (first !== -1) {
+        QUIZ.forEach(function (q, i) {
+          document.getElementById("card-" + i)
+            .classList.toggle("unanswered", answers[i] === null);
+        });
+        document.getElementById("card-" + first)
+          .scrollIntoView({ behavior: "smooth", block: "center" });
+        var firstInput = document.getElementById("card-" + first).querySelector("input");
+        if (firstInput) firstInput.focus({ preventScroll: true });
+        return;
+      }
+
+      showResult(true);
+    });
+
+    // ── 결과 화면 ─────────────────────────────────────────
+    function renderResult(result) {
+      var perfect = result.score === QUIZ.length;
+      var score = document.getElementById("result-score");
+      score.textContent = fill(
+        perfect ? CONTENT.resultPerfect : CONTENT.resultScore,
+        { score: result.score, total: QUIZ.length }
+      );
+      score.classList.toggle("is-perfect", perfect);
+      // 맞힌 개수만 알려주고, 어느 라운드였는지는 알려주지 않는다.
+      // 대부분 2지선다라, 틀린 라운드를 짚어주면 그것만 뒤집어서 바로
+      // 만점을 만든다. 부스로 다시 가보게 하려고 일부러 감춘다.
+      var remark = CONTENT.remarks[result.score] || {};
+      document.getElementById("result-remark").textContent = remark.line || "";
+      document.getElementById("result-nudge").textContent = remark.nudge || "";
+
+      if (perfect) celebrate();
+    }
+
+    // ── 화면 전환 ─────────────────────────────────────────
+    function showResult(push) {
+      renderResult(grade(answers, QUIZ));
+      document.getElementById("screen-quiz").hidden = true;
+      document.getElementById("screen-result").hidden = false;
+      document.getElementById("submit-bar").hidden = true;
+      window.scrollTo(0, 0);
+      // 폰 물리 뒤로가기가 "퀴즈로 돌아가기"로 먹히게 한다.
+      // 이게 없으면 뒤로 넘겨서 브라우저를 나가버린다.
+      if (push) history.pushState({ screen: "result" }, "");
+      onScreenChanged("result");
+    }
+
+    function showQuiz() {
+      document.getElementById("screen-result").hidden = true;
+      document.getElementById("screen-quiz").hidden = false;
+      document.getElementById("submit-bar").hidden = false;
+      window.scrollTo(0, 0);
+      onScreenChanged("quiz");
+    }
+
+    function onScreenChanged(screen) {
+      currentScreen = screen;
+      save();
+    }
+
+    // 화면 안 버튼과 폰 물리 뒤로가기가 같은 길을 타게 한다
+    document.getElementById("back").addEventListener("click", function () {
+      history.back();
+    });
+
+    window.addEventListener("popstate", function (e) {
+      if (e.state && e.state.screen === "result") showResult(false);
+      else showQuiz();
+    });
+
+    renderQuiz();
+
+    // 결과를 보던 중에 앱을 나갔다 왔으면 결과로 되돌려준다.
+    // history.state 는 새로고침을 넘어 남으므로, 이미 result 항목 위에 서 있다면
+    // 또 쌓지 않는다. 쌓이면 "돌아가기" 가 같은 화면으로만 가서 고장난 것처럼 보인다.
+    if (saved.screen === "result" && remainingCount() === 0) {
+      var alreadyOnResultEntry = !!(history.state && history.state.screen === "result");
+      showResult(!alreadyOnResultEntry);
+    }
+  }
+})();
+</script>
+
+</body>
+</html>
